@@ -4,16 +4,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AsteriuzLab — Todos os modelos de IA em um só lugar · R$ 20/mês</title>
+  <title>AsteriuzLab — Todos os modelos de IA · R$ 20/mês</title>
   <meta name="description"
-    content="A alternativa completa às assinaturas individuais de IA: múltiplos modelos frontier, voz em português,     pesquisa na web e conversa com seus PDFs. R$ 20/mês no beta.">
+    content="Múltiplos modelos de IA, voz em português, pesquisa na web e conversa com PDFs. R$ 20/mês no beta.">
 
   <!-- Open Graph / WhatsApp -->
   <meta property="og:type" content="website">
   <meta property="og:url" content="https://asteriuz.com.br/">
-  <meta property="og:title" content="AsteriuzLab — Todos os modelos de IA em um só lugar · R$ 20/mês">
+  <meta property="og:title" content="AsteriuzLab — Todos os modelos de IA · R$ 20/mês">
   <meta property="og:description"
-    content="A alternativa completa às assinaturas individuais de IA: múltiplos modelos frontier, voz em português, pesquisa na web e conversa com seus PDFs. R$ 20/mês no beta.">
+    content="Múltiplos modelos de IA, voz em português, pesquisa na web e conversa com PDFs. R$ 20/mês no beta.">
   <meta property="og:image" content="https://asteriuz.com.br/og-asteriuzlab-v1.jpg">
   <meta property="og:image:secure_url" content="https://asteriuz.com.br/og-asteriuzlab-v1.jpg">
   <meta property="og:image:type" content="image/jpeg">
@@ -24,9 +24,9 @@
 
   <!-- Twitter Card -->
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="AsteriuzLab — Todos os modelos de IA em um só lugar · R$ 20/mês">
+  <meta name="twitter:title" content="AsteriuzLab — Todos os modelos de IA · R$ 20/mês">
   <meta name="twitter:description"
-    content="A alternativa completa às assinaturas individuais de IA: múltiplos modelos frontier, voz em português, pesquisa na web e conversa com seus PDFs. R$ 20/mês no beta.">
+    content="Múltiplos modelos de IA, voz em português, pesquisa na web e conversa com PDFs. R$ 20/mês no beta.">
   <meta name="twitter:image" content="https://asteriuz.com.br/og-asteriuzlab-v1.jpg">
 
   <meta name="theme-color" content="#141414">
@@ -670,7 +670,7 @@
     .chat-sel .sel-ic {
       width: 15px;
       height: 15px;
-      color: var(--red)
+      color: var(--card-l)
     }
 
     .chat-sel .chev {
@@ -2635,8 +2635,7 @@
       }
 
       .chat-body {
-        padding: 18px 14px;
-        min-height: 0
+        padding: 18px 14px
       }
 
       .msg-u {
@@ -3523,6 +3522,10 @@
           answer: 'Claro — três pontos exigem atenção: multa rescisória, índice de reajuste e cláusula de benfeitorias. Anexe o PDF do contrato e eu aponto os riscos em ordem de gravidade.'
         },
         {
+          model: 'DeepSeek-V4.1', spec: 'rápido', icon: '#i-ds',
+          answer: 'Bora resolver rápido: manda o PDF que eu devolvo um resumo dos riscos em bullets e marco o que dá para negociar antes de assinar.'
+        },
+        {
           model: 'MiMo-V2.6-Pro', spec: 'escrita', icon: '#i-mimo',
           answer: 'Mande o contrato — PDF ou texto. Eu destaco cláusulas fora do padrão de mercado e devolvo um resumo em linguagem simples, item por item, com as páginas de referência.'
         }
@@ -3538,13 +3541,41 @@
         caret.hidden = true;
       }
 
-      async function chatLoop() {
-        const body = $('#chatBody'), q = $('#chatQ'), a = $('#chatA');
-        const qCaret = $('#qCaret'), aCaret = $('#aCaret');
-        const sel = $('#chatSel'), meta = $('#aiMeta'), think = $('#chatThinking');
-        const selIcon = $('#selIcon');
-        const p = a.closest('p');
+      const body = $('#chatBody'), q = $('#chatQ'), a = $('#chatA');
+      const qCaret = $('#qCaret'), aCaret = $('#aCaret');
+      const sel = $('#chatSel'), meta = $('#aiMeta'), think = $('#chatThinking');
+      const selIcon = $('#selIcon');
+      const p = a.closest('p');
 
+      // trava a altura do card no maior estado (respostas completas + "pensando…")
+      // para a digitação nunca empurrar o layout
+      function lockChatBody() {
+        const qT = q.textContent, aT = a.textContent, tH = think.hidden;
+        let h = 0;
+        q.textContent = QUESTION;
+        think.hidden = false;
+        for (const s of SCENES) {
+          a.textContent = s.answer;
+          h = Math.max(h, body.scrollHeight);
+        }
+        a.textContent = '';
+        h = Math.max(h, body.scrollHeight);
+        think.hidden = true;
+        q.textContent = qT;
+        a.textContent = aT;
+        think.hidden = tH;
+        body.style.height = Math.ceil(h) + 1 + 'px';
+      }
+      lockChatBody();
+
+      let lockT;
+      addEventListener('resize', () => {
+        clearTimeout(lockT);
+        lockT = setTimeout(lockChatBody, 150);
+      });
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(lockChatBody);
+
+      async function chatLoop() {
         for (; ;) {
           body.classList.add('gone');          // sai suave do ciclo anterior
           await sleep(REDUCED ? 50 : 550);
